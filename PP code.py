@@ -12,7 +12,7 @@ screen_height = 400 + bottom_panel
 
 #to run window
 screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption('Battle')
+pygame.display.set_caption('russell is ass')
 
 #define fonts
 font = pygame.font.SysFont('Times New Roman', 26)
@@ -29,7 +29,7 @@ panel_img = pygame.image.load('img/Icons/panel.png').convert_alpha()
 
 #function for drawing text
 def draw_text(text,font, text_col, x, y):
-    img = font.render(text,True,text_col)
+    img = font.render(text, True, text_col)
     screen.blit(img, (x, y))
 
 #function for drawing background
