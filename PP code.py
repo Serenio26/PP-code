@@ -1,6 +1,6 @@
 import pygame
 import random
-import button 
+from button import *
 pygame.init()
 
 #set Frame rate
@@ -18,7 +18,7 @@ pygame.display.set_caption('Battle screen')
 
 #define game variables 
 current_fighter = 1 
-total_fighter = 3 
+total_fighters = 3 
 action_cooldown = 0
 action_wait_time = 90
 attack = False
@@ -45,7 +45,7 @@ restart_img = pygame.image.load('img/Icons/restart.png').convert_alpha()
 #load victory and defeat image
 victory_img = pygame.image.load('img/Icons/victory.png').convert_alpha()
 defeat_img = pygame.image.load('img/Icons/defeat.png').convert_alpha()
-#sowrd image
+#sword image
 sword_img = pygame.image.load('img/Icons/sword.png').convert_alpha()
 
 
@@ -76,7 +76,8 @@ class Fighter():
         self.max_hp=max_hp
         self.hp=max_hp
         self.strength=strength
-        self.strength=potions
+        self.start_potions = potions
+        self.potions=potions
         self.alive= True
         self.animation_list=[]
         self.frame_index = 0
@@ -130,6 +131,7 @@ class Fighter():
             else:
                 self.idle()
 
+
     def idle(self):
         #set variables to idle action
         self.action = 0
@@ -172,7 +174,8 @@ class Fighter():
 
     def reset(self):
         self.alive = True 
-        self.potion = self.start_potions
+        self.potions = self.start_potions
+        self.hp = self.max_hp
         self.frame_index = 0
         self.action = 0
         self.update_time = pygame.time.get_ticks()
@@ -199,20 +202,20 @@ class HealthBar():
 
 
 class DamageText(pygame.sprite.Sprite):
-    def __int__(self, x, y, damage, colour):
+    def __init__(self, x, y, damage, colour):
         pygame.sprite.Sprite.__init__(self)
         self.image = font.render(damage, True, colour)
         self.rect = self.image.get_rect()
         self.rect.center = (x,y)
         self.counter = 0
 
-def update(self):
-    #morve damage text up
-    self.rect.y -= 1
-    #delete text
-    self.counter += 1
-    if self.counter > 38:
-        self.kill()
+    def update(self):
+        #morve damage text up
+        self.rect.y -= 1
+        #delete text
+        self.counter += 1
+        if self.counter > 38:
+            self.kill()
 
 damage_text_group = pygame.sprite.Group()
 
@@ -229,10 +232,39 @@ knight_health_bar = HealthBar(100, screen_height - bottom_panel + 40, knight.hp,
 bandit1_health_bar = HealthBar(550, screen_height - bottom_panel + 40, bandit1.hp, bandit1.max_hp)
 bandit2_health_bar = HealthBar(550, screen_height - bottom_panel + 100, bandit2.hp, bandit2.max_hp)
 
+#button class
+class Button():
+	def __init__(self, surface, x, y, image, size_x, size_y):
+		self.image = pygame.transform.scale(image, (size_x, size_y))
+		self.rect = self.image.get_rect()
+		self.rect.topleft = (x, y)
+		self.clicked = False
+		self.surface = surface
 
+	def draw(self):
+		action = False
+
+		#get mouse position
+		pos = pygame.mouse.get_pos()
+
+		#check mouseover and clicked conditions
+		if self.rect.collidepoint(pos):
+			if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
+				action = True
+				self.clicked = True
+
+		if pygame.mouse.get_pressed()[0] == 0:
+			self.clicked = False
+
+		#draw button
+		self.surface.blit(self.image, (self.rect.x, self.rect.y))
+
+		return action
+    
 #create button
-potion_button = button.Button(screen, 100, screen_height - bottom_panel + 70, potion_img, 64, 64)
-restart_button = button.Button(screen, 330, 120, restart_img, 120, 30)
+potion_button = Button(screen, 100, screen_height - bottom_panel + 70, potion_img, 64, 64)
+restart_button = Button(screen, 330, 120, restart_img, 120, 30)
+
 #main game runnign system
 run = True
 while run:
@@ -258,7 +290,7 @@ while run:
     damage_text_group.update()
     damage_text_group.draw(screen)
 
-#control player action
+    #control player action
     #resert action variables 
     attack = False
     potion = False
@@ -279,7 +311,6 @@ while run:
         potion = True
     #show how many left 
     draw_text(str(knight.potions), font, red, 150, screen_height - bottom_panel + 70)
-    
 
 
     if game_over == 0:
@@ -303,7 +334,7 @@ while run:
                             else:
                                 heal_amount = knight.max_hp - knight.hp
                             knight.hp += heal_amount
-                            knight.potion -= 1
+                            knight.potions -= 1
                             damage_text = DamageText(knight.rect.centerx, knight.rect.y, str(heal_amount), green)
                             damage_text_group.add(damage_text)
                             current_fighter += 1
@@ -319,13 +350,13 @@ while run:
                     action_cooldown += 1
                     if action_cooldown >= action_wait_time:
                     #check if bandit need to heal first
-                        if(bandit.hp / bandit.max_hp) < 0.5 and bandit.potion >0:
+                        if(bandit.hp / bandit.max_hp) < 0.5 and bandit.potions > 0:
                             if bandit.max_hp - bandit.hp > potion_effect:
                                 heal_amount= potion_effect
                             else:
                                 heal_amount = bandit.max_hp - bandit.hp
                             bandit.hp += heal_amount
-                            bandit.potion -= 1
+                            bandit.potions -= 1
                             damage_text = DamageText(bandit.rect.centerx, bandit.rect.y, str(heal_amount), green)
                             damage_text_group.add(damage_text)
                             current_fighter += 1
@@ -340,7 +371,7 @@ while run:
 
 
     #if all fighter have turn then reset 
-        if current_fighter > total_fighter:
+        if current_fighter > total_fighters:
             current_fighter = 1
 
 #check if all bandit are dead
@@ -372,7 +403,8 @@ while run:
             run= False
         if event.type == pygame.MOUSEBUTTONDOWN:
             clicked = True
-        else: clicked = False
+        else: 
+            clicked = False
 
     pygame.display.update()
 
